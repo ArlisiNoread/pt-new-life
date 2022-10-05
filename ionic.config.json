@@ -1,0 +1,7 @@
+{
+  "name": "PT-NewLife",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
