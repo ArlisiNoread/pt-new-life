@@ -2,7 +2,7 @@ import { IonApp, setupIonicReact } from '@ionic/react';
 import '@ionic/react/css/core.css';
 import { ReactNode, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
-import { Interface_message, Interface_algorithm_status, Interface_message_update, Interface_message_finish } from './algoritmo/algoritmo';
+import { Interface_message, Interface_algorithm_status, Interface_message_refresh_progress, Interface_message_finish } from './algoritmo/algoritmo';
 import AppBar from './components/AppBar';
 import TabsManager from './components/TabsManager';
 import Tab1 from './components/Tab1';
@@ -21,16 +21,16 @@ const sendMessageStatusToWorker = (message: Interface_algorithm_status) => {
 
 const startAlgorithm = () => {
   sendMessageStatusToWorker(["start", {
-    pa: 0,
-    repeticiones: 0,
-    max_evaluaciones: 0,
-    fcla: 0.0,
-    cfg: 0.0,
-    cfi: 0.0,
-    mc: 0,
-    pruebas: 0,
-    temperatura: 0.0,
-    precipitacion: 0.0
+    pa: 10.0,
+    repeticiones: 2,
+    max_evaluaciones: 5,
+    fcla: 0.1,
+    cfg: 0.1,
+    cfi: 0.1,
+    mc: 5.0,
+    pruebas: 30.0,
+    temperatura: 10.0,
+    precipitacion: 30.0
   }]);
 }
 
@@ -82,8 +82,8 @@ const App: React.FC = () => {
     algorithmWorker.onmessage = (message: MessageEvent<Interface_message>) => {
       const message_data = message.data;
 
-      if ((message_data as Interface_message_update)[0] === "update") {
-        const [_, progress] = message_data as Interface_message_update;
+      if ((message_data as Interface_message_refresh_progress)[0] === "update") {
+        const [_, progress] = message_data as Interface_message_refresh_progress;
 
         setProgressAlgorithmCache(addAndFixMax3ToProgressCache([progress, new Date()], progressAlgorithmCache));
       }
