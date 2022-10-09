@@ -139,7 +139,7 @@ const start_Promise_Algorithm = async (
   const temperatura = data.temperatura;
   const precipitacion = data.precipitacion;
 
-  let sol: Matrix = new Matrix([[]]);
+  let sol: Matrix = new Matrix(0, 12 + 4);
   const configuration_size: number = Configuracion.length;
 
   for (let r = 0; r < repeticiones; r++) {
@@ -148,6 +148,8 @@ const start_Promise_Algorithm = async (
     let ppd = new Matrix([[]]);
     let pmv = new Matrix([[]]);
     let trm = new Matrix([[]]);
+
+    let disTT: number = 0;
 
     //Reinicio Matrices
     let sol_corrida: Matrix = Matrix.zeros(mc * pa, 12);
@@ -180,7 +182,7 @@ const start_Promise_Algorithm = async (
         precipitacion
       );
 
-      let disTT = trm.max() - trm.min();
+      disTT = trm.max() - trm.min();
 
       for (let k = 0; k < 6; k++) {
         if (ppd.get(posicionDistanciaMinima[1], k) > 15.0) {
@@ -231,6 +233,8 @@ const start_Promise_Algorithm = async (
         //Creamos los vínculos
         let links = vinculos(pa, fcla, v);
         let contadores: Matrix = Matrix.zeros(pa, 6);
+		let sol_corrida1 = sol_corrida.clone();
+        let objetivos2 = objetivos.clone();
 
         for (let i = 0; i < pa; i++) {
           let a = i * mc;
@@ -271,6 +275,8 @@ const start_Promise_Algorithm = async (
             }
           }
         }
+
+        let aux3: Matrix;
 
         for (let i = 0; i < pa; i++) {
           let a = i * mc;
@@ -358,10 +364,131 @@ const start_Promise_Algorithm = async (
               ps = ps + 1;
               p = p + preponderancia.get(0, ps - 1);
             }
+
+            filtrado.addRow(filtrado.rows, MK.getRowVector(ps - 1));
+
+            c1.addColumn(c1.columns, [preponderancia.get(0, ps - 1)]);
+
+            seleccion = Math.round(Math.random() * (MKo.rows - 1));
+
+            filtrado.addRow(filtrado.rows, MK.getRowVector(seleccion));
+
+            c1.addColumn(c1.columns, [preponderancia.get(0, seleccion)]);
+
+            c1.mul(1.0 / c1.sum());
+
+            aux3 = c1.mmul(filtrado);
+
+            for (let iii = 0; iii < MK.columns - 1; iii = iii + 2) {
+              if (Math.random() <= cfi) {
+                aux3.set(0, iii, Math.pow(1.0 - aux3.get(0, iii), 2));
+                aux3.set(0, iii + 1, Math.pow(1.0 - aux3.get(0, iii), 2));
+              } else {
+                aux3.set(0, iii + 1, Math.pow(1.0 - aux3.get(0, iii), 2));
+              }
+            }
+          } else {
+            aux3 = new Matrix(1, 0);
+            let j = 0;
+            for (let k = 0; k < 6; k++) {
+              aux3.addColumn(aux3.columns, [Math.round(Math.random())]);
+              aux3.addColumn(aux3.columns, [Math.pow(1 - aux3.get(0, j), 2)]);
+              j += 2;
+            }
+          }
+
+          let distancias: Matrix = Matrix.zeros(1, Configuracion.length);
+
+          for (let j = 0; j < Configuracion.length; j++) {
+            let tempMat: Matrix = new Matrix(1, 0);
+            for (let xx = 0; xx < Configuracion[0].length; xx++) {
+              tempMat.addColumn(tempMat.columns, [
+                Math.pow(Configuracion[j][xx] - sol_corrida.get(i, xx), 2),
+              ]);
+            }
+            distancias.set(0, j, Math.sqrt(tempMat.sum()));
+          }
+
+          let distanciaMinima = distancias.min();
+          let distanciaMinimaCoord = distancias.minIndex()[1]; //solo es una row
+
+          let objetivos1 = Matrix.zeros(1, 4);
+
+          for (let k = 0; k < 6; k++) {
+            if (ppd.get(distanciaMinimaCoord, k) > 15) {
+              objetivos1.set(
+                0,
+                0,
+                objetivos1.get(0, 0) +
+                  (1.0 / 6.0) *
+                    ((15.0 - ppd.get(distanciaMinimaCoord, k)) / -85.0)
+              );
+            }
+            if (pmv.get(distanciaMinimaCoord, k) !== 0.0) {
+              objetivos1.set(
+                0,
+                1,
+                objetivos1.get(0, 1) +
+                  (1.0 / 6.0) *
+                    (Math.abs(pmv.get(distanciaMinimaCoord, k)) / 3.0)
+              );
+            }
+            if (
+              trm.get(distanciaMinimaCoord, k) < 18 ||
+              trm.get(distanciaMinimaCoord, k) > 23
+            ) {
+              let tempAux = Math.max(
+                18 - trm.get(distanciaMinimaCoord, k),
+                23 - trm.get(distanciaMinimaCoord, k)
+              );
+              objetivos1.set(
+                0,
+                2,
+                objetivos1.get(0, 2) + ((1.0 / 6.0) * Math.abs(tempAux)) / disTT
+              );
+            }
+          }
+
+          objetivos1.mul(1.0 / 5.0);
+
+          if (objetivos1.get(0, 3) < contadores.get(i, 0)) {
+            for (let xx = 0; xx < aux3.columns; xx++) {
+              sol_corrida1.set(
+                Math.round(contadores.get(i, 1)),
+                xx,
+                Math.round(aux3.get(0, xx))
+              );
+            }
+            for (let xx = 0; xx < objetivos1.columns; xx++) {
+              objetivos2.set(
+                Math.round(contadores.get(i, 1)),
+                xx,
+                objetivos2.get(0, xx)
+              );
+            }
           }
         }
+        sol_corrida = sol_corrida1.clone();
+        objetivos = objetivos2.clone();
       }
+
+      let minObjetivo = objetivos.minColumn(3);
+      let minObjetivoCoord = objetivos.minColumnIndex(3)[1];
+
+      let res_sol = Matrix.zeros(1, sol_corrida.columns + objetivos.columns);
+
+      for (let xx = 0; xx < sol_corrida.columns; xx++) {
+        res_sol.set(0, xx, sol_corrida.get(minObjetivoCoord, xx));
+      }
+      for (let xx = 0; xx < objetivos.columns; xx++) {
+        res_sol.set(0, xx, objetivos.get(minObjetivoCoord, xx));
+      }
+
+      console.log(sol);
+      sol.addRow(sol.rows, res_sol);
     }
+    //return sol;
+    console.log(sol);
   }
 };
 
