@@ -15,87 +15,50 @@ import PPDCancun from "./datos/PPDCancun";
 import PMVCancun from "./datos/PMVCancun";
 import TRMCancun from "./datos/TRMCancun";
 
-/**Variable que almacena el progreso del algoritmo*/
-var progress: number = 0.0;
-
-/**Variable que almacena la función asíncrona del algoritmo en ejecución */
-var algorithm_worker: null | Promise<void> = null;
-
-//let algorithm_status: Interface_algorithm_status = "stop";
-
-/**
- * Interface que define los datos requeridos para la ejecución del algoritmo
- */
-export type Interface_algorithm_status_start_data = {
-  pa: number;
-  repeticiones: number;
-  max_evaluaciones: number;
-  fcla: number;
-  cfg: number;
-  cfi: number;
-  mc: number;
-  pruebas: number;
-  temperatura: number;
-  precipitacion: number;
-};
-
-/**
- *  Interface de comunicación con el worker que realiza el algoritmo.
- *  "stop" detiene el algoritmo por completo.
- *  "pause" pausa el algoritmo.
- *  "update" mensaje para solicitar una actualización del estado actual del algoritmo
- */
-export type Interface_algorithm_status =
-  | Interface_algorithm_status_start
-  | "stop"
-  | "pause"
-  | "update";
-
-/**
- * Interface que define los valores mínimos que se deben tener para iniciar el algoritmo
- */
-export type Interface_algorithm_status_start = [
-  "start",
-  Interface_algorithm_status_start_data
-];
+import {
+  Interface_algorithm_status,
+  Interface_algorithm_status_start,
+  Interface_algorithm_status_start_data,
+} from "./AlgorithmManager";
 
 /**Interface que define los valores que debe tener la respuesta final del algoritmo*/
 export type Interface_message_finish = ["finish", "data"];
 
 /**Interface que define el mensaje para regresar un refresh del progreso */
-export type Interface_message_refresh_progress = ["update", number];
+export type Interface_message_refresh_progress = ["update", Algorithm_Info, number];
 
 /**Interface que define los mensajes que pueden ser enviados fuera del worker */
 export type Interface_message =
   | Interface_message_finish
   | Interface_message_refresh_progress;
 
-const testAlgoritmo = () => {
-  return "exito";
+type stateAlgorithm = "working" | "finished";
+
+export type Algorithm_Info = {
+  progress: number;
+  actual_status: stateAlgorithm;
+  
+};
+
+let algorithm_Info: Algorithm_Info = {
+  progress: 0.0,
+  actual_status: "working",
 };
 
 onmessage = (message: MessageEvent<Interface_algorithm_status>) => {
   const message_data = message.data;
-
   //Si el tipo de mensaje es de tipo "start"
   if ((message_data as Interface_algorithm_status_start)[0] === "start") {
     //Ejecución de algoritmo
-    //Ocurre solo si algorithm_worker es null
-    if (!algorithm_worker) {
-      start_Promise_Algorithm(
-        message_data[1] as Interface_algorithm_status_start_data
-      ).then(() => {
-        //MANDAR MENSAJE DE RESULTADO
-        const messageEndWithData: Interface_message_finish = ["finish", "data"];
-        sendMessageBack(messageEndWithData);
-        //REINICIAR HILO
-        algorithm_worker = null;
-      });
-    }
-  } else if (message_data === "stop") {
-  } else if (message_data === "pause") {
-  } else if (message_data === "update") {
-    sendMessageBack(["update", progress]);
+
+    start_Promise_Algorithm(
+      message_data[1] as Interface_algorithm_status_start_data
+    ).then(() => {
+      console.log("Algoritmo finalizado");
+      //MANDAR MENSAJE DE RESULTADO
+      const messageEndWithData: Interface_message_finish = ["finish", "data"];
+      sendMessageBack(messageEndWithData);
+    });
   }
 };
 
@@ -103,22 +66,8 @@ const sendMessageBack = (message: Interface_message) => {
   postMessage(message);
 };
 
-const funcionTestProgreso = async () => {
-  const timeOut = (segundos: number) => {
-    return new Promise(function (resolve) {
-      setTimeout(function () {
-        resolve(true);
-      }, 1000);
-    });
-  };
-
-  for (let x = 1; x <= 60; x++) {
-    const res = await timeOut(x);
-    if (res) {
-      progress = x / 60.0;
-      //console.log(`Progress ${progress}`);
-    }
-  }
+const send_update_Algorithm_Info = () => {
+  sendMessageBack(["update", algorithm_Info, performance.now()]);
 };
 
 /**
@@ -143,7 +92,10 @@ const start_Promise_Algorithm = async (
   const configuration_size: number = Configuracion.length;
 
   for (let r = 0; r < repeticiones; r++) {
-    //FUNCIÓN_QUE_DETIENE O PAUSA EL ALGORITMO();
+    //Actualiza progreso
+    algorithm_Info.progress = r / repeticiones;
+
+    send_update_Algorithm_Info();
 
     let ppd = new Matrix([[]]);
     let pmv = new Matrix([[]]);
@@ -233,7 +185,7 @@ const start_Promise_Algorithm = async (
         //Creamos los vínculos
         let links = vinculos(pa, fcla, v);
         let contadores: Matrix = Matrix.zeros(pa, 6);
-		let sol_corrida1 = sol_corrida.clone();
+        let sol_corrida1 = sol_corrida.clone();
         let objetivos2 = objetivos.clone();
 
         for (let i = 0; i < pa; i++) {
@@ -484,11 +436,10 @@ const start_Promise_Algorithm = async (
         res_sol.set(0, xx, objetivos.get(minObjetivoCoord, xx));
       }
 
-      console.log(sol);
       sol.addRow(sol.rows, res_sol);
     }
     //return sol;
-    console.log(sol);
+    //console.log(sol);
   }
 };
 
@@ -637,7 +588,7 @@ const vinculos = (pa: number, fcla: number, evaluacion: number) => {
         } else {
           if (Math.random() <= fcla) {
             links.set(i, j, Math.pow(links.get(i, j) - 1, 2));
-          } //Me ahorro este else: innecesario
+          }
         }
       }
     }
