@@ -1,3 +1,5 @@
+import { callbackify } from "util";
+
 /**
  *  Interface de comunicación con el worker que realiza el algoritmo.
  *  "stop" detiene el algoritmo por completo.
@@ -69,7 +71,8 @@ export default class AlgorithmManager {
     ]);
   }
 
-  stopAlgorithm() {
+  stopAlgorithm(callBack: Function) {
+    callBack();
     this.status = "stopped";
     this.worker?.terminate();
   }

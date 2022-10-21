@@ -22,13 +22,21 @@ import {
 } from "./AlgorithmManager";
 
 /**Interface que define los valores que debe tener la respuesta final del algoritmo*/
+export type Interface_message_start = ["start", "ok"];
+
+/**Interface que define los valores que debe tener la respuesta final del algoritmo*/
 export type Interface_message_finish = ["finish", "data"];
 
 /**Interface que define el mensaje para regresar un refresh del progreso */
-export type Interface_message_refresh_progress = ["update", Algorithm_Info, number];
+export type Interface_message_refresh_progress = [
+  "update",
+  Algorithm_Info,
+  number
+];
 
 /**Interface que define los mensajes que pueden ser enviados fuera del worker */
 export type Interface_message =
+  | Interface_message_start
   | Interface_message_finish
   | Interface_message_refresh_progress;
 
@@ -37,7 +45,6 @@ type stateAlgorithm = "working" | "finished";
 export type Algorithm_Info = {
   progress: number;
   actual_status: stateAlgorithm;
-  
 };
 
 let algorithm_Info: Algorithm_Info = {
@@ -53,7 +60,7 @@ onmessage = (message: MessageEvent<Interface_algorithm_status>) => {
 
     start_Promise_Algorithm(
       message_data[1] as Interface_algorithm_status_start_data
-    ).then(() => {
+    ).then((sol) => {
       console.log("Algoritmo finalizado");
       //MANDAR MENSAJE DE RESULTADO
       const messageEndWithData: Interface_message_finish = ["finish", "data"];
@@ -77,6 +84,8 @@ const send_update_Algorithm_Info = () => {
 const start_Promise_Algorithm = async (
   data: Interface_algorithm_status_start_data
 ) => {
+  sendMessageBack(["start", "ok"]);
+
   const pa = data.pa;
   const repeticiones = data.repeticiones;
   const max_evaluaciones = data.max_evaluaciones;
