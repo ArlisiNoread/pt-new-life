@@ -1,20 +1,43 @@
+import { FormControl, FormHelperText, Grid, Input, InputLabel, OutlinedInput } from '@mui/material';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import { Dispatch, SetStateAction } from 'react';
+import Solution from './Solution';
 
 
+type InputStateCommonData = {
+    value: [string, Dispatch<SetStateAction<string>>],
+    error: [boolean, Dispatch<SetStateAction<boolean>>],
+}
+
+export type InputStateData = {
+    TMA: InputStateCommonData,
+    PPA: InputStateCommonData
+}
+
+
+const handleInputChange = (newValue: string, dataState: InputStateCommonData) => {
+    const re = /^[0-9]*$/;
+
+    if(new RegExp(re).test(newValue)) dataState.value[1](newValue);
+
+}
 
 const Tab1: React.FC<{
     progressAlgorithmText: string,
     remainingTime: string,
     startAlgorithm: Function,
     stopAlgorithm: Function,
+    inputStateData: InputStateData
 }> = (
     {
         progressAlgorithmText,
         remainingTime,
         startAlgorithm,
         stopAlgorithm,
+        inputStateData
     }
 ) => {
 
@@ -35,10 +58,13 @@ const Tab1: React.FC<{
             );
         }
 
+
         return (
-            <Box>
-                <InputsAlgorithm />
-                {(true) ? <SolutionAlgorithm /> : ''}
+            <Box sx={{ margin: '10px' }}>
+                <InputsAlgorithm
+                    inputStateData={inputStateData}
+                />
+                {(true) ? <Solution /> : ''}
             </Box>
         );
     }
@@ -46,23 +72,53 @@ const Tab1: React.FC<{
 export default Tab1;
 
 
-const InputsAlgorithm: React.FC = () => {
+const InputsAlgorithm: React.FC<{
+    inputStateData: InputStateData
+}> = ({ inputStateData }) => {
+
+    const texfieldStyle = { style: { fontSize: 10 } };
+
+
+
     return (
         <Box>
-            <Paper variant="outlined">
-                <p>Inputs</p>
+            <Paper variant="outlined" sx={{ padding: '10px' }}>
+                <Grid container>
+                    <Grid item xs={6}>
+                        <TextField
+                            id="texFieldTMA"
+                            label="Temperatura Media Anual"
+                            helperText="Valor entre "
+                            value={inputStateData.TMA.value[0]}
+                            error={inputStateData.TMA.error[0]}
+                            onChange={(MessageEvent) => handleInputChange(MessageEvent.currentTarget.value, inputStateData.TMA)}
+                            inputProps={texfieldStyle}
+                            InputLabelProps={texfieldStyle}
+
+                        />
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField
+                            id="texFieldPPA"
+                            label="Precipitación Pluvial Anual"
+                            helperText="Valor entre "
+                            value={inputStateData.PPA.value[0]}
+                            error={inputStateData.PPA.error[0]}
+                            onChange={(MessageEvent) => handleInputChange(MessageEvent.currentTarget.value, inputStateData.PPA)}
+                            inputProps={texfieldStyle}
+                            InputLabelProps={texfieldStyle}
+                        />
+                    </Grid>
+
+                </Grid>
+
+
+
+
             </Paper>
         </Box>
     );
 }
 
-const SolutionAlgorithm: React.FC = () => {
-    return (
-        <Box>
-            <Paper>
-                <p>Solución algoritmo</p>
-            </Paper>
 
-        </Box>
-    );
-}

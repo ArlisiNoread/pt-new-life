@@ -6,7 +6,7 @@ import Box from '@mui/material/Box';
 import { Interface_message, Interface_message_refresh_progress, Interface_message_finish } from './algoritmo/algoritmo';
 import AppBar from './components/AppBar';
 import TabsManager from './components/TabsManager';
-import Tab1 from './components/Tab1';
+import Tab1, { InputStateData } from './components/Tab1';
 import Tab2 from './components/Tab2';
 import Tab3 from './components/Tab3';
 import AlgorithmManager from './algoritmo/AlgorithmManager';
@@ -34,7 +34,7 @@ const generateRemainingTime = (
 
   //let diferenciaTiemposPromedio = (Math.abs(cache2.getTime() - cache1.getTime()) + Math.abs(cache1.getTime() - cache0.getTime())) / 2;
 
-  let diferenciaTiemposPromedio = NP.divide(NP.plus(now2 - now1), 1000); 
+  let diferenciaTiemposPromedio = NP.divide(NP.plus(now2 - now1), 1000);
   diferenciaTiemposPromedio = Math.abs(NP.minus(Math.abs(diferenciaTiemposPromedio), now0));
   diferenciaTiemposPromedio = NP.divide(diferenciaTiemposPromedio / 2.0); //Diferencia en milisegundos
 
@@ -145,6 +145,18 @@ const App: React.FC = () => {
   }, [progressAlgorithmCache]);
   */
 
+
+  const inputStateData: InputStateData = {
+    TMA: {
+      value: useState<string>(""),
+      error: useState<boolean>(false),
+    },
+    PPA: {
+      value: useState<string>(""),
+      error: useState<boolean>(false),
+    }
+  }
+
   return (
     <Box style={{ height: "100vh", width: "100%", display: "flex", flexFlow: "column", flexDirection: "column" }}>
       <Box style={{ width: "100%" }}>
@@ -158,6 +170,7 @@ const App: React.FC = () => {
             progressAlgorithmText={progressString}
             startAlgorithm={() => { algorithmManager.startAlgorithm(onWorkerMessage) }}
             stopAlgorithm={() => { algorithmManager.stopAlgorithm() }}
+            inputStateData={inputStateData}
           /> :
             (tabNumber === 1) ? <Tab2 /> :
               <Tab3 />
