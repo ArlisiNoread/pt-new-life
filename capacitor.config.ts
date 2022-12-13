@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'PT-NewLife',
+  appId: 'uam.pt.app',
+  appName: 'pt-uam',
   webDir: 'build',
   bundledWebRuntime: false
 };

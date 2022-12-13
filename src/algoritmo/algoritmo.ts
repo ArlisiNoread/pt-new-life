@@ -448,7 +448,7 @@ const start_Promise_Algorithm = async (
       sol.addRow(sol.rows, res_sol);
     }
   }
-
+    console.log(sol)
   //return sol;
 };
 
