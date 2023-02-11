@@ -63,10 +63,6 @@ const Tab1: React.FC<{
         solutionDataArray
     }
 ) => {
-
-
-
-
         return (
             <Box sx={{ margin: '10px' }}>
                 <InputsAlgorithm
@@ -77,7 +73,7 @@ const Tab1: React.FC<{
                 />
                 {
                     solutionDataArray.map(
-                        (value, index) => <Solution 
+                        (value, index) => <Solution
                             key={'solution-' + index}
                             id={index}
                             solutionData={value}

@@ -1,6 +1,6 @@
 import { IonSelectPopover } from "@ionic/core/components";
 import { Matrix } from "ml-matrix";
-
+import NP from "number-precision";
 import Configuracion from "./datos/Configuracion";
 import PPDCDMX from "./datos/PPDCDMX";
 import PMVCDMX from "./datos/PMVCDMX";
@@ -25,7 +25,7 @@ import {
 export type Interface_message_start = ["start", "ok"];
 
 /**Interface que define los valores que debe tener la respuesta final del algoritmo*/
-export type Interface_message_finish = ["finish", "data"];
+export type Interface_message_finish = ["finish", "data"]; //Por definir
 
 /**Interface que define el mensaje para regresar un refresh del progreso */
 export type Interface_message_refresh_progress = [
@@ -44,11 +44,13 @@ type stateAlgorithm = "working" | "finished";
 
 export type Algorithm_Info = {
   progress: number;
+  tiempo_restante: 0.0;
   actual_status: stateAlgorithm;
 };
 
 let algorithm_Info: Algorithm_Info = {
   progress: 0.0,
+  tiempo_restante: 0.0,
   actual_status: "working",
 };
 
@@ -77,8 +79,36 @@ const send_update_Algorithm_Info = () => {
   sendMessageBack(["update", algorithm_Info, performance.now()]);
 };
 
+const update_Algorithm_Info = () => {};
+
+type LoopType = "repeticiones";
+
+type Loop_Performance = {
+  percentage_of_completion: number;
+  time: number;
+};
+
+const get_Loop_Performance = (
+  loopActual: number,
+  loopFinal: number,
+  timeInPast: number
+) => {
+  const percentage_of_completion: number = NP.times(
+    NP.divide(loopActual, loopFinal),
+    100
+  );
+
+  const timeElapsed: number = Math.abs(NP.minus(performance.now(), timeInPast));
+};
+
+
+let performance = {
+  
+}
+
+
 /**
- * Estrella del escenario: ¡algoritmo de método musical!
+ * Estrella del escenario: ¡Algoritmo del Método Musical!
  * ¡Que empiece la música!
  * */
 const start_Promise_Algorithm = async (
@@ -100,11 +130,9 @@ const start_Promise_Algorithm = async (
   let sol: Matrix = new Matrix(0, 12 + 4);
   const configuration_size: number = Configuracion.length;
 
-  for (let r = 0; r < repeticiones; r++) {
-    //Actualiza progreso
-    algorithm_Info.progress = r / repeticiones;
-
-    send_update_Algorithm_Info();
+  for (let repeticion = 0; repeticion < repeticiones; repeticion++) {
+    //Data para cálculos de rendimiento
+    const performanceDataLoop_r = performance.now();
 
     let ppd = new Matrix([[]]);
     let pmv = new Matrix([[]]);
@@ -447,8 +475,12 @@ const start_Promise_Algorithm = async (
 
       sol.addRow(sol.rows, res_sol);
     }
+
+    //*******Actualiza progreso*******
+    algorithm_Info.progress = repeticion / repeticiones;
+    send_update_Algorithm_Info();
   }
-    console.log(sol)
+  console.log(sol);
   //return sol;
 };
 

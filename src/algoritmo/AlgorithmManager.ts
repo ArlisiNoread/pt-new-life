@@ -48,7 +48,6 @@ export default class AlgorithmManager {
   }
 
   startAlgorithm(onWorkerMessage: Function) {
-    console.log("arranque");
     this.status = "running";
     this.worker = new Worker(new URL("./algoritmo.ts", import.meta.url));
     this.worker.onmessage = (message: MessageEvent<any>) => {
